@@ -2,6 +2,7 @@ package Question_20200604_1;
 
 import java.io.IOException;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -24,52 +25,77 @@ public class myexample3 extends HttpServlet {
     }
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+		// request에서 데이터를 받아옴
 		String v_ = request.getParameter("value");
 		int v = Integer.parseInt(v_);
 		String op = request.getParameter("operator");
 		
-		//ServletContext application = request.getServletContext();
-		//HttpSession session = request.getSession();
+		
 		Cookie[] cookies = request.getCookies();
+		ServletContext application = request.getServletContext();
+		HttpSession session = request.getSession();
 		
 		if(op.equals("=")) {
-			int result = 0;
-//			int prev_v = (int)application.getAttribute("value");
-//			String prev_op = (String)application.getAttribute("operator");
+			// 각각 데이터 초기화
+			int cookies_result = 0;
+			int application_result = 0;
+			int session_result = 0;
 			
-//			int prev_v = (int)session.getAttribute("value");
-//			String prev_op = (String)session.getAttribute("operator");
-			
-			int prev_v = 0;
-			String prev_op = "";
+			// 쿠키에서 데이터를 받아옴
+			int cookies_prev_v = 0;
+			String cookies_prev_op = "";
 			for(Cookie c:cookies) {
 				if(c.getName().equals("value"))
-					prev_v = Integer.parseInt(c.getValue());
+					cookies_prev_v = Integer.parseInt(c.getValue());
 				if(c.getName().equals("operator"))
-					prev_op = c.getValue();
+					cookies_prev_op = c.getValue();
 			}
-			if(prev_op.equals("+")) {
-				result = prev_v + v;
+			//Servlet Context에서 데이터를 받아옴
+			int application_prev_v = (int)request.getServletContext().getAttribute("value");
+			String application_prev_op = (String)request.getServletContext().getAttribute("operator");
+			
+			//Session 에서 데이터를 받아옴
+			int session_prev_v = (int)session.getAttribute("value");
+			String session_prev_op = (String)session.getAttribute("operator");
+			
+			
+			//쿠키, ServletContext, Session에서 각각 데이터를 받아 계산
+			if(cookies_prev_op.equals("+") && application_prev_op.equals("+") && session_prev_op.equals("+")) {
+				cookies_result = cookies_prev_v + v;
+				application_result = application_prev_v + v;
+				session_result = session_prev_v + v;
 			}
 			else {
-				result = prev_v - v;
+				cookies_result = cookies_prev_v - v;
+				application_result = application_prev_v - v;
+				session_result = session_prev_v - v;
 			}
 			
-			response.getWriter().printf("Result is %d\n", result);	
+			response.getWriter().printf("%d %s %d Result is %d of using cookies\n",cookies_prev_v,cookies_prev_op,v, cookies_result);	
+			response.getWriter().printf("%d %s %d Result is %d of using application\n",application_prev_v,application_prev_op,v, application_result);	
+			response.getWriter().printf("%d %s %d Result is %d of using session\n",session_prev_v,session_prev_op,v, session_result);	
 		}
 		else {
-//			application.setAttribute("value", v);
-//			application.setAttribute("operator", op);
 			
-//			session.setAttribute("value", v);
-//			session.setAttribute("operator", op);
+			// servlet context 데이터 전송
+			application.setAttribute("value", v);
+			application.setAttribute("operator", op);
 			
+			//데이터를 세션에 넣어 전송
+			session.setAttribute("value", v);
+			session.setAttribute("operator", op);
+			
+			//데이터를 쿠키로 만들고
 			Cookie valueCookie = new Cookie("value",String.valueOf(v));
 			Cookie opCookie = new Cookie("operator",op);
 			
+			//쿠키를 페이지로 전송
 			response.addCookie(valueCookie);
 			response.addCookie(opCookie);
+			RequestDispatcher dispatcher = request.getRequestDispatcher("Calculator2.html");
+			dispatcher.forward(request, response);
+		
+			//response.sendRedirect("Calculator2.html");
 
 		}
 	}
